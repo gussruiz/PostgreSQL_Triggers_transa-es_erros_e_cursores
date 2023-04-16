@@ -99,10 +99,11 @@ select * from log_instrutores;
 
 insert into instrutor (nome, salario) values ('Outra Pessoa De Novo', 600);
 
+-- aula 2
 
+-- foram feitos alterações no cod anterior sobre transações
 
-
-
-
-
+begin
+insert into instrutor (nome, salario) values ('Maria', 700);
+rollback;
 
