@@ -284,4 +284,4 @@ $$ language plpgsql;
 
 -- aula 5
 
-
+boas praticas
