@@ -235,3 +235,53 @@ insert into instrutor (nome, salario) values ('Grabiel', 11000);
 
 
 -- aula 4
+
+create or replace function cria_instrutor () returns trigger as $$
+	declare
+		media_salarial decimal;
+		instrutores_recebem_menos integer default 0;
+		total_instrutores integer default 0;
+		salario decimal;
+		percentual decimal(5, 2);
+		cursor_salario refcursor;
+	begin
+		select avg(instrutor.salario) into media_salarial from instrutor where id <> new.id;
+
+		if new.salario > media_salarial then
+			insert into log_instrutores (informacao) values (new.nome || 'recebe acima da média');
+		end if;
+		
+		select instrutores_internos(new.id) into cursor_salario;
+		loop
+			fetch cursor_salario into salario;
+			exit when not found;
+			total_instrutores := total_instrutores + 1;
+			
+			if new.salario > salario then
+				instrutores_recebem_menos := instrutores_recebem_menos + 1;
+			end if;
+		end loop;
+		
+		percentual = instrutores_recebem_menos::decimal / total_instrutores::decimal * 100;
+		assert percentual < 100::decimal, 'Instrutores novos não podem receber mais do que todos os antigos';
+		
+		insert into log_instrutores (informacao) 
+			values (new.nome || ' recebe mais do que ' || percentual || '% da grade de instrutores');
+
+		return new;
+	end;
+$$ language plpgsql;
+
+create or replace function instrutores_internos (id_instrutor integer) returns refcursor as $$
+	declare
+		cursor_salario refcursor;
+	begin
+		open cursor_salario for select instrutor.salario from instrutor where id <> id_instrutor and salario > 0;
+		return cursor_salario;
+	end;
+$$ language plpgsql;
+
+
+-- aula 5
+
+
