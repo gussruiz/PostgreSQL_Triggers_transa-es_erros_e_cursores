@@ -69,7 +69,7 @@ create or replace function cria_instrutor () returns trigger as $$
 		percentual decimal(5, 2);
 	begin
 		select avg(instrutor.salario) into media_salarial from instrutor where id <> new.id;
-		
+
 		if new.salario > media_salarial then
 			insert into log_instrutores (informacao) values (new.nome || 'recebe acima da média');
 		end if;
@@ -86,6 +86,7 @@ create or replace function cria_instrutor () returns trigger as $$
 			
 		insert into log_instrutores (informacao) 
 			values (new.nome || ' recebe mais do que ' || percentual || '% da grade de instrutores');
+
 		return new;
 	end;
 $$ language plpgsql;
@@ -107,3 +108,130 @@ begin
 insert into instrutor (nome, salario) values ('Maria', 700);
 rollback;
 
+-- aula 3
+
+create or replace function cria_instrutor () returns trigger as $$
+	declare
+		media_salarial decimal;
+		instrutores_recebem_menos integer default 0;
+		total_instrutores integer default 0;
+		salario decimal;
+		percentual decimal(5, 2);
+	begin
+		select avg(instrutor.salario) into media_salarial from instrutor where id <> new.id;
+
+		if new.salario > media_salarial then
+			insert into log_instrutores (informacao) values (new.nome || 'recebe acima da média');
+		end if;
+		
+		for salario in select instrutor.salario from instrutor where id <> new.id loop
+			total_instrutores := total_instrutores + 1;
+			
+			if new.salario > salario then
+				instrutores_recebem_menos := instrutores_recebem_menos + 1;
+			end if;
+		end loop;
+		
+		percentual = instrutores_recebem_menos::decimal / total_instrutores::decimal * 100;
+			
+		insert into log_instrutores (informacao, teste) 
+			values (new.nome || ' recebe mais do que ' || percentual || '% da grade de instrutores');
+
+		return new;
+		exception 
+			when undefined_column then 
+				raise notice 'Algo de errado não está certo';
+				return new;
+	end;
+$$ language plpgsql;
+
+
+insert into instrutor (nome, salario) values ('João', 10000);
+select * from log_instrutores;
+select * from instrutor;
+
+create or replace function cria_instrutor () returns trigger as $$
+	declare
+		media_salarial decimal;
+		instrutores_recebem_menos integer default 0;
+		total_instrutores integer default 0;
+		salario decimal;
+		percentual decimal(5, 2);
+	begin
+		select avg(instrutor.salario) into media_salarial from instrutor where id <> new.id;
+
+		if new.salario > media_salarial then
+			insert into log_instrutores (informacao) values (new.nome || 'recebe acima da média');
+		end if;
+		
+		for salario in select instrutor.salario from instrutor where id <> new.id loop
+			total_instrutores := total_instrutores + 1;
+			
+			if new.salario > salario then
+				instrutores_recebem_menos := instrutores_recebem_menos + 1;
+			end if;
+		end loop;
+		
+		percentual = instrutores_recebem_menos::decimal / total_instrutores::decimal * 100;
+			
+		insert into log_instrutores (informacao, teste) 
+			values (new.nome || ' recebe mais do que ' || percentual || '% da grade de instrutores');
+
+		return new;
+		exception 
+			when undefined_column then 
+				raise notice 'Algo de errado não está certo';
+				raise exception 'Erro complicado de resolver'; 
+				return new;
+	end;
+$$ language plpgsql;
+
+
+insert into instrutor (nome, salario) values ('Grabiel', 300);
+
+drop trigger cria_log_instrutor on instrutor;
+
+
+create trigger cria_log_instrutor before insert or update on instrutor
+	for each row execute function cria_instrutor();
+	
+create or replace function cria_instrutor () returns trigger as $$
+	declare
+		media_salarial decimal;
+		instrutores_recebem_menos integer default 0;
+		total_instrutores integer default 0;
+		salario decimal;
+		percentual decimal(5, 2);
+	begin
+		select avg(instrutor.salario) into media_salarial from instrutor where id <> new.id;
+
+		if new.salario > media_salarial then
+			insert into log_instrutores (informacao) values (new.nome || 'recebe acima da média');
+		end if;
+		
+		for salario in select instrutor.salario from instrutor where id <> new.id loop
+			total_instrutores := total_instrutores + 1;
+			
+			if new.salario > salario then
+				instrutores_recebem_menos := instrutores_recebem_menos + 1;
+			end if;
+		end loop;
+		
+		percentual = instrutores_recebem_menos::decimal / total_instrutores::decimal * 100;
+		assert percentual < 100::decimal, 'Instrutores novos não podem receber mais do que todos os antigos';
+		
+		insert into log_instrutores (informacao) 
+			values (new.nome || ' recebe mais do que ' || percentual || '% da grade de instrutores');
+
+		return new;
+	end;
+$$ language plpgsql;
+
+insert into instrutor (nome, salario) values ('Grabiel', 2000);
+
+select * from log_instrutores;
+select * from instrutor;
+insert into instrutor (nome, salario) values ('Grabiel', 11000);
+
+
+-- aula 4
